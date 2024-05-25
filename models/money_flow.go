@@ -15,3 +15,9 @@ type MoneyFlow struct {
     CategoryID    uint      `gorm:"not null" json:"category_id"`
     UserID        uint      `gorm:"not null" json:"user_id"`
 }
+
+type MoneyFlowDetail struct {
+    Amount        float64   `json:"amount"`
+    CategoryName  string    `json:"category_name"`
+    Image         string    `json:"image,omitempty"`
+}

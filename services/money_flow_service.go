@@ -3,6 +3,7 @@ package services
 import (
     "FINANCIALPROJECT/models"
     "gorm.io/gorm"
+    "time"
 )
 
 type MoneyFlowService struct {
@@ -42,4 +43,20 @@ func (s *MoneyFlowService) CreateMoneyFlow(moneyFlow *models.MoneyFlow) map[stri
     }
 
     return nil
+}
+
+func (s *MoneyFlowService) GetFlowsByTypeAndDate(flowType string, startDate, endDate time.Time, userID uint) ([]models.MoneyFlowDetail, error) {
+    var flows []models.MoneyFlowDetail
+    isIncome := flowType == "income"
+    result := s.DB.Model(&models.MoneyFlow{}).
+        Select("SUM(money_flows.amount) as amount, categories.name as category_name, categories.image").
+        Joins("join categories on categories.id = money_flows.category_id").
+        Where("money_flows.is_income = ? AND money_flows.created_at BETWEEN ? AND ? AND money_flows.user_id = ?", isIncome, startDate, endDate, userID).
+        Group("categories.name, categories.image").
+        Scan(&flows)
+
+    if result.Error != nil {
+        return nil, result.Error
+    }
+    return flows, nil
 }
