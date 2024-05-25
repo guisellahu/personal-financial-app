@@ -78,3 +78,42 @@ func (cc *CategoryController) CreateCategory(w http.ResponseWriter, r *http.Requ
     w.WriteHeader(http.StatusCreated)
     json.NewEncoder(w).Encode(category)
 }
+
+func (cc *CategoryController) UpdateCategory(w http.ResponseWriter, r *http.Request) {
+    categoryID, _ := strconv.Atoi(r.URL.Query().Get("id"))
+    name := r.FormValue("name")
+    image, imageHeader, _ := r.FormFile("image")
+
+    var imageName string
+    if imageHeader != nil {
+        imageName = strconv.FormatInt(time.Now().Unix(), 10) + "_" + imageHeader.Filename
+    }
+
+    claims := r.Context().Value("userClaims").(jwt.MapClaims)
+    userID := uint(claims["user_id"].(float64))
+
+    category, err := cc.CategoryService.UpdateCategory(userID, uint(categoryID), name, image, imageName)
+    if err != nil {
+        utils.SendJSONError(w, http.StatusBadRequest, err)
+        return
+    }
+
+    w.Header().Set("Content-Type", "application/json")
+    json.NewEncoder(w).Encode(category)
+}
+
+func (cc *CategoryController) DeleteCategory(w http.ResponseWriter, r *http.Request) {
+    categoryID, _ := strconv.Atoi(r.URL.Query().Get("id"))
+
+    claims := r.Context().Value("userClaims").(jwt.MapClaims)
+    userID := uint(claims["user_id"].(float64))
+
+    if err := cc.CategoryService.DeleteCategory(userID, uint(categoryID)); err != nil {
+        utils.SendJSONError(w, http.StatusBadRequest, map[string][]string{"general": {err.Error()}})
+        return
+    }
+
+    w.Header().Set("Content-Type", "application/json")
+    w.WriteHeader(http.StatusOK)
+    json.NewEncoder(w).Encode(map[string]string{"message": "Category deleted successfully"})
+}

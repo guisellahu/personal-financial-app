@@ -7,6 +7,7 @@ import (
     "os"
     "path/filepath"
     "io"
+    "errors"
 )
 
 type CategoryService struct {
@@ -68,4 +69,47 @@ func (s *CategoryService) CreateCategory(name string, imageFile multipart.File, 
     }
 
     return &category, nil
+}
+
+func (s *CategoryService) UpdateCategory(userID uint, categoryID uint, name string, imageFile multipart.File, imageName string) (*models.Category, map[string][]string) {
+    var category models.Category
+    if err := s.DB.Where("id = ? AND user_id = ?", categoryID, userID).First(&category).Error; err != nil {
+        return nil, map[string][]string{"general": {"category not found or access denied"}}
+    }
+
+    // Actualizar datos
+    category.Name = name
+    if imageFile != nil {
+        uploadPath := "uploads"
+        imagePath := filepath.Join(uploadPath, imageName)
+        category.Image = imagePath
+        if _, err := os.Stat(uploadPath); os.IsNotExist(err) {
+            os.Mkdir(uploadPath, os.ModePerm)
+        }
+        outFile, err := os.Create(imagePath)
+        if err != nil {
+            return nil, map[string][]string{"image": {"failed to create image file: " + err.Error()}}
+        }
+        defer outFile.Close()
+        if _, err := io.Copy(outFile, imageFile); err != nil {
+            return nil, map[string][]string{"image": {"failed to copy image file: " + err.Error()}}
+        }
+    }
+
+    if err := s.DB.Save(&category).Error; err != nil {
+        return nil, map[string][]string{"general": {"failed to update category"}}
+    }
+    return &category, nil
+}
+
+func (s *CategoryService) DeleteCategory(userID uint, categoryID uint) error {
+    var category models.Category
+    if err := s.DB.Where("id = ? AND user_id = ?", categoryID, userID).First(&category).Error; err != nil {
+        return errors.New("category not found or access denied")
+    }
+
+    if err := s.DB.Delete(&category).Error; err != nil {
+        return errors.New("failed to delete category")
+    }
+    return nil
 }
