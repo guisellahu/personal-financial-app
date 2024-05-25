@@ -6,6 +6,7 @@ import (
     "FINANCIALPROJECT/models"
     "FINANCIALPROJECT/services"
     "FINANCIALPROJECT/utils"
+    "github.com/dgrijalva/jwt-go"
 )
 
 type MoneyFlowController struct {
@@ -22,6 +23,10 @@ func (mfc *MoneyFlowController) CreateMoneyFlow(w http.ResponseWriter, r *http.R
         utils.SendJSONError(w, http.StatusBadRequest, map[string][]string{"general": {err.Error()}})
         return
     }
+
+    claims := r.Context().Value("userClaims").(jwt.MapClaims)
+    userID := uint(claims["user_id"].(float64))
+    moneyFlow.UserID = userID
 
     validationErrors := mfc.MoneyFlowService.CreateMoneyFlow(&moneyFlow)
     if validationErrors != nil {

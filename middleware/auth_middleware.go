@@ -5,6 +5,7 @@ import (
     "strings"
     "github.com/dgrijalva/jwt-go"
     "log"
+    "context"
 )
 
 var SecretKey = []byte("your_secret_key") // Reemplaza esto con tu clave secreta
@@ -37,6 +38,11 @@ func JWTMiddleware(next http.Handler) http.Handler {
             return
         }
 
-        next.ServeHTTP(w, r)
+        if claims, ok := token.Claims.(jwt.MapClaims); ok && token.Valid {
+            ctx := context.WithValue(r.Context(), "userClaims", claims)
+            next.ServeHTTP(w, r.WithContext(ctx))
+        } else {
+            http.Error(w, "Invalid token claims", http.StatusUnauthorized)
+        }
     })
 }

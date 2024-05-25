@@ -13,4 +13,5 @@ type MoneyFlow struct {
     IsIncome      bool      `json:"is_income"`
     FrequencyID   uint      `gorm:"not null" json:"frequency_id"`
     CategoryID    uint      `gorm:"not null" json:"category_id"`
+    UserID        uint      `gorm:"not null" json:"user_id"`
 }
