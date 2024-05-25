@@ -136,3 +136,37 @@ func generateJWT(user models.User) (string, error) {
 
     return tokenString, nil
 }
+
+func (s *UserService) UpdateUsername(userID uint, newUsername string) map[string][]string {
+    validationErrors := make(map[string][]string)
+
+    // Validate new username format
+    matched, _ := regexp.MatchString(`^\S+$`, newUsername)
+    if !matched {
+        validationErrors["username"] = []string{"username cannot contain spaces"}
+        return validationErrors
+    }
+
+    // Check for unique username
+    var count int64
+    s.DB.Model(&models.User{}).Where("username = ?", newUsername).Not("id = ?", userID).Count(&count)
+    if count > 0 {
+        validationErrors["username"] = []string{"username already exists"}
+        return validationErrors
+    }
+
+    // Update username
+    var user models.User
+    if err := s.DB.First(&user, userID).Error; err != nil {
+        validationErrors["general"] = []string{"user not found"}
+        return validationErrors
+    }
+
+    user.Username = newUsername
+    if err := s.DB.Save(&user).Error; err != nil {
+        validationErrors["general"] = []string{"failed to update username"}
+        return validationErrors
+    }
+
+    return nil
+}

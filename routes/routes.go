@@ -24,6 +24,7 @@ func RegisterRoutes(uc *controllers.UserController, db *gorm.DB) {
 
     // Protected routes
     http.Handle("/api/password", middleware.JWTMiddleware(http.HandlerFunc(uc.UpdatePassword)))
+    http.Handle("/api/user/update-username", middleware.JWTMiddleware(http.HandlerFunc(uc.UpdateUsername)))
 
     http.Handle("/api/categories", middleware.JWTMiddleware(http.HandlerFunc(categoryController.GetAllCategories)))
     http.Handle("/api/categories/create", middleware.JWTMiddleware(http.HandlerFunc(categoryController.CreateCategory)))

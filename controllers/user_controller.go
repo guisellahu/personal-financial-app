@@ -113,3 +113,25 @@ func (uc *UserController) UpdatePassword(w http.ResponseWriter, r *http.Request)
     w.WriteHeader(http.StatusOK)
     json.NewEncoder(w).Encode(map[string]string{"message": "Password updated successfully"})
 }
+
+func (uc *UserController) UpdateUsername(w http.ResponseWriter, r *http.Request) {
+    var data struct {
+        Username string `json:"username"`
+    }
+    if err := json.NewDecoder(r.Body).Decode(&data); err != nil {
+        utils.SendJSONError(w, http.StatusBadRequest, map[string][]string{"general": {err.Error()}})
+        return
+    }
+
+    claims := r.Context().Value("userClaims").(jwt.MapClaims)
+    userID := uint(claims["user_id"].(float64))
+
+    if validationErrors := uc.UserService.UpdateUsername(userID, data.Username); validationErrors != nil {
+        utils.SendJSONError(w, http.StatusBadRequest, validationErrors)
+        return
+    }
+
+    w.Header().Set("Content-Type", "application/json")
+    w.WriteHeader(http.StatusOK)
+    json.NewEncoder(w).Encode(map[string]string{"message": "Username updated successfully"})
+}
