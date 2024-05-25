@@ -10,3 +10,7 @@ type Category struct {
     Image  string `json:"image"`
     UserID uint   `gorm:"index;default:null" json:"user_id"`
 }
+
+func (c *Category) Predefined() bool {
+    return c.UserID == 0
+}

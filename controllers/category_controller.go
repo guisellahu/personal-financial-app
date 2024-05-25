@@ -27,18 +27,10 @@ func (cc *CategoryController) GetAllCategories(w http.ResponseWriter, r *http.Re
         return
     }
 
-    response := make([]map[string]interface{}, len(categories))
-    for i, category := range categories {
-        response[i] = map[string]interface{}{
-            "id":    category.ID,
-            "name":  category.Name,
-            "image": category.Image,
-        }
-    }
-
     w.Header().Set("Content-Type", "application/json")
-    json.NewEncoder(w).Encode(response)
+    json.NewEncoder(w).Encode(categories) // Correct usage
 }
+
 
 func (cc *CategoryController) CreateCategory(w http.ResponseWriter, r *http.Request) {
     name := r.FormValue("name")

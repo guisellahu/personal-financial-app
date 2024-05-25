@@ -18,12 +18,22 @@ func NewCategoryService(db *gorm.DB) *CategoryService {
     return &CategoryService{DB: db}
 }
 
-func (s *CategoryService) GetAllCategories(userID uint) ([]models.Category, error) {
+func (s *CategoryService) GetAllCategories(userID uint) ([]map[string]interface{}, error) {
     var categories []models.Category
-    if err := s.DB.Where("user_id = ? OR user_id IS NULL", userID).Select("id", "name", "image").Find(&categories).Error; err != nil {
+    if err := s.DB.Where("user_id = ? OR user_id IS NULL", userID).Select("id", "name", "image", "user_id").Find(&categories).Error; err != nil {
         return nil, err
     }
-    return categories, nil
+
+    result := make([]map[string]interface{}, len(categories))
+    for i, category := range categories {
+        result[i] = map[string]interface{}{
+            "id":         category.ID,
+            "name":       category.Name,
+            "image":      category.Image,
+            "predefined": category.Predefined(),
+        }
+    }
+    return result, nil
 }
 
 func (s *CategoryService) CreateCategory(name string, imageFile multipart.File, imageName string, userID uint) (*models.Category, map[string][]string) {
