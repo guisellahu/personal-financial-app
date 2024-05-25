@@ -7,6 +7,7 @@ import (
     "FINANCIALPROJECT/utils"
     "time"
     "strconv"
+    "github.com/dgrijalva/jwt-go"
 )
 
 type CategoryController struct {
@@ -18,7 +19,9 @@ func NewCategoryController(cs *services.CategoryService) *CategoryController {
 }
 
 func (cc *CategoryController) GetAllCategories(w http.ResponseWriter, r *http.Request) {
-    categories, err := cc.CategoryService.GetAllCategories()
+    claims := r.Context().Value("userClaims").(jwt.MapClaims)
+    userID := uint(claims["user_id"].(float64))
+    categories, err := cc.CategoryService.GetAllCategories(userID)
     if err != nil {
         utils.SendJSONError(w, http.StatusInternalServerError, map[string][]string{"general": {"failed to get categories"}})
         return
@@ -56,7 +59,10 @@ func (cc *CategoryController) CreateCategory(w http.ResponseWriter, r *http.Requ
         imageName = strconv.FormatInt(time.Now().Unix(), 10) + "_" + imageHeader.Filename
     }
 
-    category, serviceErrors := cc.CategoryService.CreateCategory(name, image, imageName)
+    claims := r.Context().Value("userClaims").(jwt.MapClaims)
+    userID := uint(claims["user_id"].(float64))
+
+    category, serviceErrors := cc.CategoryService.CreateCategory(name, image, imageName, userID)
     if serviceErrors != nil {
         for key, errs := range serviceErrors {
             validationErrors[key] = append(validationErrors[key], errs...)

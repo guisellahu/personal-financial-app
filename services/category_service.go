@@ -17,20 +17,20 @@ func NewCategoryService(db *gorm.DB) *CategoryService {
     return &CategoryService{DB: db}
 }
 
-func (s *CategoryService) GetAllCategories() ([]models.Category, error) {
+func (s *CategoryService) GetAllCategories(userID uint) ([]models.Category, error) {
     var categories []models.Category
-    if err := s.DB.Select("id", "name", "image").Find(&categories).Error; err != nil {
+    if err := s.DB.Where("user_id = ? OR user_id IS NULL", userID).Select("id", "name", "image").Find(&categories).Error; err != nil {
         return nil, err
     }
     return categories, nil
 }
 
-func (s *CategoryService) CreateCategory(name string, imageFile multipart.File, imageName string) (*models.Category, map[string][]string) {
+func (s *CategoryService) CreateCategory(name string, imageFile multipart.File, imageName string, userID uint) (*models.Category, map[string][]string) {
     validationErrors := make(map[string][]string)
 
     // Check for unique category name
     var existingCategory models.Category
-    if err := s.DB.Where("name = ?", name).First(&existingCategory).Error; err == nil {
+    if err := s.DB.Where("name = ? AND (user_id = ? OR user_id IS NULL)", name, userID).First(&existingCategory).Error; err == nil {
         validationErrors["name"] = append(validationErrors["name"], "category name already exists")
     }
 
@@ -38,7 +38,7 @@ func (s *CategoryService) CreateCategory(name string, imageFile multipart.File, 
         return nil, validationErrors
     }
 
-    category := models.Category{Name: name}
+    category := models.Category{Name: name, UserID: userID}
 
     if imageFile != nil {
         uploadPath := "uploads"
