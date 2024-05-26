@@ -22,6 +22,9 @@ func RegisterRoutes(uc *controllers.UserController, db *gorm.DB) {
 	moneyFlowService := services.NewMoneyFlowService(db)
     moneyFlowController := controllers.NewMoneyFlowController(moneyFlowService)
 
+    goalService := services.NewGoalService(db)
+    goalController := controllers.NewGoalController(goalService)
+
     // Protected routes
     http.Handle("/api/password", middleware.JWTMiddleware(http.HandlerFunc(uc.UpdatePassword)))
     http.Handle("/api/user/update-username", middleware.JWTMiddleware(http.HandlerFunc(uc.UpdateUsername)))
@@ -34,6 +37,7 @@ func RegisterRoutes(uc *controllers.UserController, db *gorm.DB) {
 	http.Handle("/api/frequencies", middleware.JWTMiddleware(http.HandlerFunc(frequencyController.GetAllFrequencies)))
 	http.Handle("/api/money_flows/create", middleware.JWTMiddleware(http.HandlerFunc(moneyFlowController.CreateMoneyFlow)))
     http.Handle("/api/money_flows", middleware.JWTMiddleware(http.HandlerFunc(moneyFlowController.GetMoneyFlows)))
+    http.Handle("/api/goals/create", middleware.JWTMiddleware(http.HandlerFunc(goalController.CreateGoal)))
 }
 
 

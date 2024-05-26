@@ -28,7 +28,7 @@ func (cc *CategoryController) GetAllCategories(w http.ResponseWriter, r *http.Re
     }
 
     w.Header().Set("Content-Type", "application/json")
-    json.NewEncoder(w).Encode(categories) // Correct usage
+    json.NewEncoder(w).Encode(map[string]interface{}{"categories": categories}) // Correct usage
 }
 
 

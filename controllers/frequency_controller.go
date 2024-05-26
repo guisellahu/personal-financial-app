@@ -31,5 +31,5 @@ func (fc *FrequencyController) GetAllFrequencies(w http.ResponseWriter, r *http.
     }
 
     w.Header().Set("Content-Type", "application/json")
-    json.NewEncoder(w).Encode(response)
+    json.NewEncoder(w).Encode(map[string]interface{}{"frequencies": response})
 }

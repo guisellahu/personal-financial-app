@@ -21,7 +21,7 @@ func main() {
     }
 
     // Migrate the schema
-    db.AutoMigrate(&models.User{}, &models.Category{}, &models.Frequency{}, &models.MoneyFlow{})
+    db.AutoMigrate(&models.User{}, &models.Category{}, &models.Frequency{}, &models.MoneyFlow{}, &models.Goal{})
 
     // Seed data
     seeders.SeedData(db)

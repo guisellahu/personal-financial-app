@@ -73,5 +73,5 @@ func (mfc *MoneyFlowController) GetMoneyFlows(w http.ResponseWriter, r *http.Req
     }
 
     w.Header().Set("Content-Type", "application/json")
-    json.NewEncoder(w).Encode(flows)
+    json.NewEncoder(w).Encode(map[string]interface{}{"flows": flows})
 }
