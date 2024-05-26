@@ -60,3 +60,20 @@ func (s *MoneyFlowService) GetFlowsByTypeAndDate(flowType string, startDate, end
     }
     return flows, nil
 }
+
+func (s *MoneyFlowService) GetAllFlowsByType(flowType string) ([]models.MoneyFlowDetail, error) {
+    var flows []models.MoneyFlowDetail
+    isIncome := flowType == "income"
+    result := s.DB.Model(&models.MoneyFlow{}).
+        Select("money_flows.created_at, SUM(money_flows.amount) as amount, categories.name as category_name, categories.image").
+        Joins("join categories on categories.id = money_flows.category_id").
+        Where("money_flows.is_income = ?", isIncome).
+        Group("categories.name, categories.image, money_flows.created_at").
+        Order("money_flows.created_at").
+        Scan(&flows)
+
+    if result.Error != nil {
+        return nil, result.Error
+    }
+    return flows, nil
+}

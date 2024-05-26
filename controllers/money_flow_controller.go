@@ -44,34 +44,52 @@ func (mfc *MoneyFlowController) CreateMoneyFlow(w http.ResponseWriter, r *http.R
 func (mfc *MoneyFlowController) GetMoneyFlows(w http.ResponseWriter, r *http.Request) {
     flowType := r.URL.Query().Get("type")
     created_at := r.URL.Query().Get("created_at")
-    dateRange := strings.Split(created_at, ",")
+    var startDate, endDate time.Time
+    var err error
 
-    if len(dateRange) != 2 {
-        utils.SendJSONError(w, http.StatusBadRequest, map[string][]string{"created_at": {"Must include two dates separated by a comma [start,end]"}})
-        return
-    }
-    // Asumimos que las fechas están en el formato "YYYY-MM-DD"
-    startDate, err := time.Parse("2006-01-02", strings.TrimSpace(dateRange[0]))
-    if err != nil {
-        utils.SendJSONError(w, http.StatusBadRequest, map[string][]string{"created_at": {"Start date is invalid", err.Error()}})
-        return
-    }
-    endDate, err := time.Parse("2006-01-02", strings.TrimSpace(dateRange[1]))
-    if err != nil {
-        utils.SendJSONError(w, http.StatusBadRequest, map[string][]string{"created_at": {"End date is invalid", err.Error()}})
-        return
-    }
-    endDate = endDate.Add(24 * time.Hour) // Añade 24 horas para incluir todo el día
+    var flows []models.MoneyFlowDetail
+    if created_at == "" {
+        // Si no se proporciona created_at, busca todos los flujos de ese tipo
+        flows, err = mfc.MoneyFlowService.GetAllFlowsByType(flowType)
+    } else {
+        dateRange := strings.Split(created_at, ",")
+        if len(dateRange) != 2 {
+            utils.SendJSONError(w, http.StatusBadRequest, map[string][]string{"created_at": {"Must include two dates separated by a comma [start,end]"}})
+            return
+        }
+        // Parsear fechas
+        startDate, err = time.Parse("2006-01-02", strings.TrimSpace(dateRange[0]))
+        if err != nil {
+            utils.SendJSONError(w, http.StatusBadRequest, map[string][]string{"created_at": {"Start date is invalid", err.Error()}})
+            return
+        }
+        endDate, err = time.Parse("2006-01-02", strings.TrimSpace(dateRange[1]))
+        if err != nil {
+            utils.SendJSONError(w, http.StatusBadRequest, map[string][]string{"created_at": {"End date is invalid", err.Error()}})
+            return
+        }
+        endDate = endDate.Add(24 * time.Hour) // Añade 24 horas para incluir todo el día
 
-    claims := r.Context().Value("userClaims").(jwt.MapClaims)
-    userID := uint(claims["user_id"].(float64))
+        claims := r.Context().Value("userClaims").(jwt.MapClaims)
+        userID := uint(claims["user_id"].(float64))
 
-    flows, err := mfc.MoneyFlowService.GetFlowsByTypeAndDate(flowType, startDate, endDate, userID)
+        // Buscar los flujos por tipo y rango de fecha
+        flows, err = mfc.MoneyFlowService.GetFlowsByTypeAndDate(flowType, startDate, endDate, userID)
+    }
+
     if err != nil {
         utils.SendJSONError(w, http.StatusInternalServerError, map[string][]string{"general": {err.Error()}})
         return
     }
 
+    response := map[string]interface{}{"flows": flows}
+    if created_at == "" {
+        // Si no hay filtro 'created_at', formatear la fecha para cada registro
+        for i, flow := range flows {
+            flows[i].FormattedDate = flow.CreatedAt.Format("2006-01-02") // Asignamos el string a FormattedDate
+        }
+    }
+
     w.Header().Set("Content-Type", "application/json")
-    json.NewEncoder(w).Encode(map[string]interface{}{"flows": flows})
+    json.NewEncoder(w).Encode(response)
 }

@@ -34,6 +34,8 @@ func (gc *GoalController) CreateGoal(w http.ResponseWriter, r *http.Request) {
         return
     }
 
+	parsedDate = parsedDate.Add(24 * time.Hour)
+
     claims := r.Context().Value("userClaims").(jwt.MapClaims)
     userID := uint(claims["user_id"].(float64))
 
