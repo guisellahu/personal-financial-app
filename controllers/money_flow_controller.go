@@ -15,22 +15,35 @@ type MoneyFlowController struct {
     MoneyFlowService *services.MoneyFlowService
 }
 
+type MoneyFlowRequest struct {
+    models.MoneyFlow
+    CreatedAtStr string `json:"created_at"`  // Recibe la fecha como string
+}
+
 func NewMoneyFlowController(mfs *services.MoneyFlowService) *MoneyFlowController {
     return &MoneyFlowController{MoneyFlowService: mfs}
 }
 
 func (mfc *MoneyFlowController) CreateMoneyFlow(w http.ResponseWriter, r *http.Request) {
-    var moneyFlow models.MoneyFlow
-    if err := json.NewDecoder(r.Body).Decode(&moneyFlow); err != nil {
+    var request MoneyFlowRequest
+    if err := json.NewDecoder(r.Body).Decode(&request); err != nil {
         utils.SendJSONError(w, http.StatusBadRequest, map[string][]string{"general": {err.Error()}})
         return
     }
 
+    // Parsear la fecha recibida como string
+    createdAt, err := time.Parse("2006-01-02", request.CreatedAtStr)
+    if err != nil {
+        utils.SendJSONError(w, http.StatusBadRequest, map[string][]string{"created_at": {"invalid date format, expected YYYY-MM-DD"}})
+        return
+    }
+    request.MoneyFlow.CreatedAt = createdAt  // Asignar la fecha parseada al modelo MoneyFlow
+
     claims := r.Context().Value("userClaims").(jwt.MapClaims)
     userID := uint(claims["user_id"].(float64))
-    moneyFlow.UserID = userID
+    request.MoneyFlow.UserID = userID  // Asegúrate de que el ID de usuario se maneja correctamente
 
-    validationErrors := mfc.MoneyFlowService.CreateMoneyFlow(&moneyFlow)
+    validationErrors := mfc.MoneyFlowService.CreateMoneyFlow(&request.MoneyFlow)
     if validationErrors != nil {
         utils.SendJSONError(w, http.StatusBadRequest, validationErrors)
         return
@@ -38,7 +51,7 @@ func (mfc *MoneyFlowController) CreateMoneyFlow(w http.ResponseWriter, r *http.R
 
     w.Header().Set("Content-Type", "application/json")
     w.WriteHeader(http.StatusCreated)
-    json.NewEncoder(w).Encode(moneyFlow)
+    json.NewEncoder(w).Encode(request.MoneyFlow)
 }
 
 func (mfc *MoneyFlowController) GetMoneyFlows(w http.ResponseWriter, r *http.Request) {
@@ -91,5 +104,21 @@ func (mfc *MoneyFlowController) GetMoneyFlows(w http.ResponseWriter, r *http.Req
     }
 
     w.Header().Set("Content-Type", "application/json")
+    json.NewEncoder(w).Encode(response)
+}
+
+func (mfc *MoneyFlowController) GetBalance(w http.ResponseWriter, r *http.Request) {
+    claims := r.Context().Value("userClaims").(jwt.MapClaims)
+    userID := uint(claims["user_id"].(float64))
+
+    balance, err := mfc.MoneyFlowService.GetUserBalance(userID)
+    if err != nil {
+        utils.SendJSONError(w, http.StatusInternalServerError, map[string][]string{"general": {err.Error()}})
+        return
+    }
+
+    response := map[string]float64{"balance": balance}
+    w.Header().Set("Content-Type", "application/json")
+    w.WriteHeader(http.StatusOK)
     json.NewEncoder(w).Encode(response)
 }

@@ -14,7 +14,8 @@ type MoneyFlow struct {
     FrequencyID   uint      `gorm:"not null" json:"frequency_id"`
     CategoryID    uint      `gorm:"not null" json:"category_id"`
     UserID        uint      `gorm:"not null" json:"user_id"`
-    //CreatedAt     time.Time `json:"created_at,omitempty"`
+    CreatedAt     time.Time `gorm:"not null" json:"created_at"`
+    FormattedDate string    `json:"created_at,omitempty"`
 }
 
 type MoneyFlowDetail struct {

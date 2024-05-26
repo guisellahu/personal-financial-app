@@ -32,6 +32,11 @@ func (s *MoneyFlowService) CreateMoneyFlow(moneyFlow *models.MoneyFlow) map[stri
         validationErrors["category_id"] = append(validationErrors["category_id"], "invalid category_id")
     }
 
+    // Validate CreatedAt
+    if moneyFlow.CreatedAt.IsZero() {
+        validationErrors["created_at"] = append(validationErrors["created_at"], "created_at must be provided and valid")
+    }
+
     if len(validationErrors) > 0 {
         return validationErrors
     }
@@ -76,4 +81,34 @@ func (s *MoneyFlowService) GetAllFlowsByType(flowType string) ([]models.MoneyFlo
         return nil, result.Error
     }
     return flows, nil
+}
+
+func (s *MoneyFlowService) GetUserBalance(userID uint) (float64, error) {
+    var totalIncome float64
+    var totalOutcome float64
+
+    // Sumar todos los ingresos
+    err := s.DB.Model(&models.MoneyFlow{}).
+        Where("user_id = ? AND is_income = true", userID).
+        Select("SUM(amount)").
+        Row().
+        Scan(&totalIncome)
+    if err != nil {
+        return 0, err
+    }
+
+    // Sumar todos los egresos
+    err = s.DB.Model(&models.MoneyFlow{}).
+        Where("user_id = ? AND is_outcome = true", userID).
+        Select("SUM(amount)").
+        Row().
+        Scan(&totalOutcome)
+    if err != nil {
+        return 0, err
+    }
+
+    // Calcular el saldo final
+    balance := totalIncome - totalOutcome
+
+    return balance, nil
 }

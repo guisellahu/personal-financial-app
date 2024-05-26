@@ -36,6 +36,7 @@ func RegisterRoutes(uc *controllers.UserController, db *gorm.DB) {
 
 	http.Handle("/api/frequencies", middleware.JWTMiddleware(http.HandlerFunc(frequencyController.GetAllFrequencies)))
 	http.Handle("/api/money_flows/create", middleware.JWTMiddleware(http.HandlerFunc(moneyFlowController.CreateMoneyFlow)))
+    http.Handle("/api/money_flows/balance", middleware.JWTMiddleware(http.HandlerFunc(moneyFlowController.GetBalance)))
     http.Handle("/api/money_flows", middleware.JWTMiddleware(http.HandlerFunc(moneyFlowController.GetMoneyFlows)))
     http.Handle("/api/goals/create", middleware.JWTMiddleware(http.HandlerFunc(goalController.CreateGoal)))
 }
