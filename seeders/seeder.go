@@ -11,11 +11,11 @@ import (
 
 func SeedData(db *gorm.DB) {
     categories := []models.Category{
-        {Name: "Viaje"},
-        {Name: "Hogar"},
-        {Name: "Educación"},
-        {Name: "Comida"},
-        {Name: "Salud"},
+        {Name: "Transporte", Image: "uploads/transporte.png"},
+        {Name: "Hogar", Image: "uploads/hogar.png"},
+        {Name: "Educación", Image: "uploads/educacion.png"},
+        {Name: "Comida", Image: "uploads/comida.png"},
+        {Name: "Salud", Image: "uploads/salud.png"},
     }
 
     for _, category := range categories {
