@@ -40,50 +40,78 @@ func SeedData(db *gorm.DB) {
 
     // SIMULATED DATA
 
-rand.Seed(time.Now().UnixNano())
-hashedBytes, _ := bcrypt.GenerateFromPassword([]byte("hashed_password"), bcrypt.DefaultCost)
-hashedPassword := string(hashedBytes)
+    rand.Seed(time.Now().UnixNano())
+	hashedBytes, _ := bcrypt.GenerateFromPassword([]byte("hashed_password"), bcrypt.DefaultCost)
+	hashedPassword := string(hashedBytes)
 
-// Definir fechas de inicio y fin
-startDate := time.Date(2024, time.May, 1, 0, 0, 0, 0, time.UTC)
-endDate := time.Date(2024, time.May, 26, 0, 0, 0, 0, time.UTC) // 26 para incluir el 25 de mayo
+	// Definir fechas de inicio y fin
+	startDate := time.Date(2024, time.May, 1, 0, 0, 0, 0, time.UTC)
 
-for i := 0; i < 100; i++ {
-    user := models.User{
-        Username: "user_" + strconv.Itoa(i),
-        Email:    "user_" + strconv.Itoa(i) + "@example.com",
-        Password: hashedPassword,
-    }
-    db.Create(&user)
+	// Número total de registros por usuario
+	totalRecords := 50
 
-    // Crear transacciones para cada usuario
-    for d := startDate; d.Before(endDate); d = d.AddDate(0, 0, rand.Intn(3)+1) { // Entre 1 y 3 días de intervalo
-        createdAt := time.Date(d.Year(), d.Month(), d.Day(), rand.Intn(24), rand.Intn(60), rand.Intn(60), 0, d.Location()) // Generar un timestamp aleatorio para ese día
-        amount := float64(rand.Intn(1160000) + 580000) // Montos entre 100 y 1100
-        isIncome := rand.Intn(2) == 1
-        var categoryID uint
+	// Ciclo para crear registros para cada usuario
+	for i := 0; i < 5; i++ {
+		user := models.User{
+			Username: "user_" + strconv.Itoa(i),
+			Email:    "user_" + strconv.Itoa(i) + "@example.com",
+			Password: hashedPassword,
+		}
+		db.Create(&user)
 
-        if isIncome {
-            // Si es ingreso, seleccionar entre las categorías Sueldo o Regalo
-            incomeCategories := []uint{7, 8}
-            categoryID = incomeCategories[rand.Intn(len(incomeCategories))]
-        } else {
-            // Si es egreso, seleccionar entre las categorías restantes
-            outcomeCategories := []uint{1, 2, 3, 4, 5, 6, 9}
-            categoryID = outcomeCategories[rand.Intn(len(outcomeCategories))]
-        }
+		// Balance inicial para el usuario
+		balance := 1000.0
 
-        moneyFlow := models.MoneyFlow{
-            Amount:        amount,
-            IsIncome:      isIncome,
-            IsOutcome:     !isIncome,
-            FrequencyID:   uint(rand.Intn(5) + 1), // Suponiendo que tienes 5 frecuencias
-            CategoryID:    categoryID,             // Asignar la categoría seleccionada
-            UserID:        user.ID,
-            CreatedAt:     createdAt,
-            DeactivatedAt: time.Time{},
-        }
-        db.Create(&moneyFlow)
+		// Calcular el incremento o decremento lineal para cada transacción
+		increment := balance / float64(totalRecords)
+
+		// Ciclo para crear registros de ingresos
+		for j := 0; j < totalRecords/2; j++ {
+			// Calcular la cantidad y la fecha para la transacción
+            amount := float64(rand.Intn(1160000) + 580000)
+			createdAt := startDate.AddDate(0, 0, j)
+
+			// Crear la transacción de ingreso
+			moneyFlow := models.MoneyFlow{
+				Amount:        amount,
+				IsIncome:      true,
+				IsOutcome:     false,
+				FrequencyID:   uint(rand.Intn(5) + 1), // Suponiendo que tienes 5 frecuencias
+				CategoryID:    uint(rand.Intn(2) + 7), // Sueldo o Regalos
+				UserID:        user.ID,
+				CreatedAt:     createdAt,
+				DeactivatedAt: time.Time{},
+			}
+			db.Create(&moneyFlow)
+
+			// Actualizar el balance
+			balance += increment
+		}
+
+		// Balance inicial para el usuario (reset)
+		balance = 1000.0
+
+		// Ciclo para crear registros de egresos
+		for j := 0; j < totalRecords/2; j++ {
+			// Calcular la cantidad y la fecha para la transacción
+            amount := float64(rand.Intn(1160000) + 580000)
+			createdAt := startDate.AddDate(0, 0, j)
+
+			// Crear la transacción de egreso
+			moneyFlow := models.MoneyFlow{
+				Amount:        amount,
+				IsIncome:      false,
+				IsOutcome:     true,
+				FrequencyID:   uint(rand.Intn(5) + 1), // Suponiendo que tienes 5 frecuencias
+				CategoryID:    uint(rand.Intn(7) + 1), // Cualquiera de las otras categorías
+				UserID:        user.ID,
+				CreatedAt:     createdAt,
+				DeactivatedAt: time.Time{},
+			}
+			db.Create(&moneyFlow)
+
+			// Actualizar el balance
+			balance -= increment
         }
     }
 
