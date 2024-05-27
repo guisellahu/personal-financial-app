@@ -62,6 +62,11 @@ func (gc *GoalController) GetGoalDetails(w http.ResponseWriter, r *http.Request)
     claims := r.Context().Value("userClaims").(jwt.MapClaims)
     userID := uint(claims["user_id"].(float64))
 
+    if err := gc.trainModel(userID); err != nil {
+        utils.SendJSONError(w, http.StatusInternalServerError, map[string][]string{"train": {err.Error()}})
+        return
+    }
+
     // Obtener la meta actual
     goal, err := gc.GoalService.GetCurrentGoal(userID)
     if err != nil {
@@ -107,6 +112,26 @@ func (gc *GoalController) GetGoalDetails(w http.ResponseWriter, r *http.Request)
         "prediction": predictions,
     }
     json.NewEncoder(w).Encode(response)
+}
+
+func (gc *GoalController) trainModel(userID uint) error {
+    requestData := map[string]uint{"user_id": userID}
+    requestBody, err := json.Marshal(requestData)
+    if err != nil {
+        return err
+    }
+
+    resp, err := http.Post("http://python_app:5000/train", "application/json", bytes.NewBuffer(requestBody))
+    if err != nil {
+        return err
+    }
+    defer resp.Body.Close()
+
+    if resp.StatusCode != http.StatusOK {
+        return fmt.Errorf("failed to train model, received status code: %d", resp.StatusCode)
+    }
+
+    return nil
 }
 
 func (gc *GoalController) PredictGoalOutcome(goal *models.Goal) (map[string]interface{}, error) {
