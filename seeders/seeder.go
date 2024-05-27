@@ -61,12 +61,24 @@ for i := 0; i < 100; i++ {
         createdAt := time.Date(d.Year(), d.Month(), d.Day(), rand.Intn(24), rand.Intn(60), rand.Intn(60), 0, d.Location()) // Generar un timestamp aleatorio para ese día
         amount := float64(rand.Intn(1160000) + 580000) // Montos entre 100 y 1100
         isIncome := rand.Intn(2) == 1
+        var categoryID uint
+
+        if isIncome {
+            // Si es ingreso, seleccionar entre las categorías Sueldo o Regalo
+            incomeCategories := []uint{7, 8}
+            categoryID = incomeCategories[rand.Intn(len(incomeCategories))]
+        } else {
+            // Si es egreso, seleccionar entre las categorías restantes
+            outcomeCategories := []uint{1, 2, 3, 4, 5, 6, 9}
+            categoryID = outcomeCategories[rand.Intn(len(outcomeCategories))]
+        }
+
         moneyFlow := models.MoneyFlow{
             Amount:        amount,
             IsIncome:      isIncome,
             IsOutcome:     !isIncome,
             FrequencyID:   uint(rand.Intn(5) + 1), // Suponiendo que tienes 5 frecuencias
-            CategoryID:    uint(rand.Intn(5) + 1), // Suponiendo que tienes 5 categorías
+            CategoryID:    categoryID,             // Asignar la categoría seleccionada
             UserID:        user.ID,
             CreatedAt:     createdAt,
             DeactivatedAt: time.Time{},
