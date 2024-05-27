@@ -67,6 +67,13 @@ func (gc *GoalController) GetGoalDetails(w http.ResponseWriter, r *http.Request)
         return
     }
 
+    // Obtener la fecha del último registro del usuario en money_flows
+    lastFlowDate, err := gc.MoneyFlowService.GetLastFlowDate(userID)
+    if err != nil {
+        utils.SendJSONError(w, http.StatusInternalServerError, map[string][]string{"last_flow_date": {err.Error()}})
+        return
+    }
+
     // Obtener la meta actual
     goal, err := gc.GoalService.GetCurrentGoal(userID)
     if err != nil {
@@ -82,7 +89,7 @@ func (gc *GoalController) GetGoalDetails(w http.ResponseWriter, r *http.Request)
     }
 
     // Realizar predicción
-    predictionData, err := gc.PredictGoalOutcome(goal)
+    predictionData, err := gc.PredictGoalOutcome(goal, lastFlowDate, goal.TargetDate)
     if err != nil {
         utils.SendJSONError(w, http.StatusInternalServerError, map[string][]string{"prediction": {err.Error()}})
         return
@@ -134,11 +141,11 @@ func (gc *GoalController) trainModel(userID uint) error {
     return nil
 }
 
-func (gc *GoalController) PredictGoalOutcome(goal *models.Goal) (map[string]interface{}, error) {
+func (gc *GoalController) PredictGoalOutcome(goal *models.Goal, lastFlowDate, targetDate time.Time) (map[string]interface{}, error) {
     // Crear el JSON para enviar
-    requestData := map[string]int{
-        "month": int(goal.TargetDate.Month()),
-        "year":  goal.TargetDate.Year(),
+    requestData := map[string]interface{}{
+        "last_flow_date": lastFlowDate.Format("2006-01-02"),
+        "target_date":    targetDate.Format("2006-01-02"),
     }
     requestBody, err := json.Marshal(requestData)
     if err != nil {

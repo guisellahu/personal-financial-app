@@ -41,26 +41,28 @@ def predict():
     if not os.path.exists(MODEL_FILE):
         return jsonify({'error': 'Model is not trained yet'}), 400
 
-    # Suponemos que el JSON entrante tiene un mes y un año para predecir cada día del mes
-    month = request.json.get('month')
-    year = request.json.get('year')
-    if not month or not year:
-        return jsonify({'error': 'Month and year are required'}), 400
+    # Obtener las fechas del cuerpo de la solicitud JSON
+    request_data = request.json
+    last_flow_date_str = request_data.get('last_flow_date')
+    target_date_str = request_data.get('target_date')
 
-    # Generar rango de fechas para el mes especificado
-    start_date = pd.Timestamp(year=year, month=month, day=1)
-    end_date = start_date + pd.offsets.MonthEnd()
+    # Verificar que se proporcionaron las fechas
+    if not last_flow_date_str or not target_date_str:
+        return jsonify({'error': 'Both last_flow_date and target_date are required'}), 400
 
-    # Crear DataFrame para días del mes
-    days_in_month = pd.date_range(start=start_date, end=end_date)
-    df = pd.DataFrame({'day': days_in_month.day, 'date': days_in_month})
+    # Convertir las fechas a objetos datetime
+    last_flow_date = pd.to_datetime(last_flow_date_str)
+    target_date = pd.to_datetime(target_date_str)
+
+    # Generar rango de fechas para el intervalo entre el último registro y la fecha objetivo
+    dates_in_interval = pd.date_range(start=last_flow_date, end=target_date)
+    df = pd.DataFrame({'day': dates_in_interval.day, 'date': dates_in_interval})
 
     # Realizar predicciones
     predictions = model.predict(df[['day']])
 
     # Formatear predicciones
     df['prediction'] = predictions
-    #df['prediction'] = df['prediction'].apply(lambda x: f"${int(x):,}")
 
     # Convertir DataFrame a JSON para la respuesta
     df['date'] = df['date'].dt.strftime('%Y-%m-%d')  # Formato de date YYY-MM-DD

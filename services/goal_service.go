@@ -70,3 +70,16 @@ func (s *MoneyFlowService) GetProgressiveBalance(userID uint) ([]map[string]inte
 
     return results, nil
 }
+
+func (s *MoneyFlowService) GetLastFlowDate(userID uint) (time.Time, error) {
+    var lastFlowDate time.Time
+    var flow models.MoneyFlow
+
+    result := s.DB.Where("user_id = ?", userID).Order("created_at desc").First(&flow)
+    if result.Error != nil {
+        return lastFlowDate, result.Error
+    }
+
+    lastFlowDate = flow.CreatedAt
+    return lastFlowDate, nil
+}
