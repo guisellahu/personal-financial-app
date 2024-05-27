@@ -89,7 +89,7 @@ func (gc *GoalController) GetGoalDetails(w http.ResponseWriter, r *http.Request)
     }
 
     // Realizar predicción
-    predictionData, err := gc.PredictGoalOutcome(goal, lastFlowDate, goal.TargetDate)
+    predictionData, err := gc.PredictGoalOutcome(goal, lastFlowDate, goal.TargetDate, balanceEntries)
     if err != nil {
         utils.SendJSONError(w, http.StatusInternalServerError, map[string][]string{"prediction": {err.Error()}})
         return
@@ -141,7 +141,7 @@ func (gc *GoalController) trainModel(userID uint) error {
     return nil
 }
 
-func (gc *GoalController) PredictGoalOutcome(goal *models.Goal, lastFlowDate, targetDate time.Time) (map[string]interface{}, error) {
+func (gc *GoalController) PredictGoalOutcome(goal *models.Goal, lastFlowDate, targetDate time.Time, balanceEntries []map[string]interface{}) (map[string]interface{}, error) {
     // Crear el JSON para enviar
     requestData := map[string]interface{}{
         "last_flow_date": lastFlowDate.Format("2006-01-02"),
@@ -173,6 +173,14 @@ func (gc *GoalController) PredictGoalOutcome(goal *models.Goal, lastFlowDate, ta
 
     if len(response.Predictions) == 0 {
         return nil, errors.New("no predictions returned")
+    }
+
+    // Procesar predicciones acumulativas
+    lastBalance := balanceEntries[len(balanceEntries)-1]["balance"].(float64)
+    for _, pred := range response.Predictions {
+        predictionValue := pred["prediction"].(float64)
+        lastBalance += predictionValue
+        pred["prediction"] = lastBalance
     }
 
     return map[string]interface{}{"predictions": response.Predictions}, nil
